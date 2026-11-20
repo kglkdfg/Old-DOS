@@ -33,7 +33,7 @@ implemented in the current kernel.
 | `COPY source destination` | Copy a file |
 | `DEL file` | Delete a file |
 | `CAT file` | Display a text file |
-| `EDIT file` | Built-in text editor |
+| `EDIT [file]` | Built-in text editor |
 | `MKDIR path` | Create a directory |
 | `CRTF file` | Create an empty file (CReaTe File) |
 | `Alt+Shift` | Switch English/Russian keyboard layout |
@@ -48,8 +48,26 @@ The planned editor controls are `Ctrl+O` to save (then `Enter` to confirm)
 and `Ctrl+X` to exit. If there are unsaved changes, the editor must ask before
 discarding them.
 
-See [docs/COMMANDS.md](docs/COMMANDS.md) for the command behavior, filesystem
-architecture, and implementation order.
+## Development plan
+
+Development is divided into explicit phases with tasks and exit criteria:
+
+1. **Phase 0 — Stabilize prototype:** repeatable builds and baseline QEMU tests.
+2. **Phase 1 — Kernel foundations:** console, keyboard events, memory layout,
+   and a larger-kernel loading path.
+3. **Phase 2 — Disk I/O:** BIOS sector access, MBR partition discovery, volumes.
+4. **Phase 3 — ODFS:** native filesystem design and system volume `S:`.
+5. **Phase 4 — FAT12/FAT16:** drivers for additional volumes.
+6. **Phase 5 — Shell file commands:** paths, `DIR`, `MKDIR`, `CRTF`, `CAT`,
+   `COPY`, and `DEL`.
+7. **Phase 6 — Text editor:** `EDIT`, save with `Ctrl+O` + `Enter`, exit
+   with `Ctrl+X`, and protection against losing unsaved work.
+8. **Phase 7 — Keyboard layouts:** English/Russian switching with `Alt+Shift`.
+9. **Phase 8 — Integration and release:** tests, recovery cases, and verified docs.
+
+See [docs/COMMANDS.md](docs/COMMANDS.md) for the detailed tasks and exit criteria
+for every phase. These are plans, not claims that the features are already
+implemented.
 
 ## Filesystem architecture
 
@@ -106,22 +124,8 @@ project discussion/instructions for the PowerShell commands.
 ```text
 boot/boot.asm       BIOS boot sector (loads the kernel)
 kernel/kernel.asm   16-bit kernel, text console, and command shell
-docs/COMMANDS.md   Planned command and filesystem specification
+docs/COMMANDS.md   Phased development plan and filesystem specification
 Makefile            Build floppy image and launch QEMU
 ```
-
-## Roadmap
-
-- [x] BIOS boot sector
-- [x] Load a small 16-bit kernel
-- [x] Text-mode console and keyboard input
-- [x] Basic built-in shell commands
-- [ ] Disk I/O and partition/volume discovery
-- [ ] Native ODFS filesystem for system drive S:
-- [ ] FAT12 and FAT16 filesystem drivers
-- [ ] File and directory commands
-- [ ] Built-in text editor with safe save/exit
-- [ ] English/Russian keyboard layout switching
-- [ ] Load and execute external programs
 
 Contributions, bug reports, and ideas are welcome.
