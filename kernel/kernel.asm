@@ -105,6 +105,46 @@ shell:
     call print_string
     jmp shell
 
+.partitions:
+    call disk_scan_mbr
+    jc .partition_error
+    cmp byte [disk_partition_count], 0
+    jne .partition_list
+    mov si, no_partitions_text
+    call print_string
+    jmp shell
+.partition_list:
+    mov si, partitions_header
+    call print_string
+    mov si, disk_partitions
+    mov bp, [disk_partition_count]
+.partition_loop:
+    mov di, si
+    mov si, partition_type_text
+    call print_string
+    mov al, [di]
+    movzx eax, al
+    shl eax, 24
+    call print_hex32
+    mov si, partition_start_text
+    call print_string
+    mov eax, [di + 2]
+    call print_hex32
+    mov si, partition_size_text
+    call print_string
+    mov eax, [di + 6]
+    call print_hex32
+    call newline
+    mov si, di
+    add si, 12
+    dec bp
+    jnz .partition_loop
+    jmp shell
+.partition_error:
+    mov si, partition_error_text
+    call print_string
+    jmp shell
+
 .disktest:
     call disk_init
     jc .disk_unavailable
@@ -141,6 +181,27 @@ shell:
     mov si, unknown_text
     call print_string
     jmp shell
+
+; Print EAX as eight hexadecimal digits.
+print_hex32:
+    pushad
+    mov edx, eax
+    mov cx, 8
+.hex_digit:
+    rol edx, 4
+    mov al, dl
+    and al, 0x0F
+    cmp al, 9
+    jbe .hex_numeric
+    add al, 'A' - 10
+    jmp .hex_emit
+.hex_numeric:
+    add al, '0'
+.hex_emit:
+    call put_char
+    loop .hex_digit
+    popad
+    ret
 
 ; Print a zero-terminated string at DS:SI.
 print_string:
@@ -266,6 +327,7 @@ cmd_cls db 'CLS', 0
 cmd_ver db 'VER', 0
 cmd_reboot db 'REBOOT', 0
 cmd_disktest db 'DISKTEST', 0
+cmd_partitions db 'PARTITIONS', 0
 cmd_echo db 'ECHO', 0
 help_text db 'Commands:', 13, 10
           db '  HELP   Show this help', 13, 10
@@ -273,13 +335,20 @@ help_text db 'Commands:', 13, 10
           db '  VER    Show OS version', 13, 10
           db '  ECHO   Print text', 13, 10
           db '  REBOOT Restart the machine', 13, 10
-          db '  DISKTEST Read LBA 0 and verify its boot signature', 13, 10, 0
+          db '  DISKTEST Read LBA 0 and verify its boot signature', 13, 10
+          db '  PARTITIONS List validated primary MBR partitions', 13, 10, 0
 version_text db 'Old-DOS version 0.1 (BIOS, 16-bit real mode)', 13, 10, 0
 unknown_text db 'Bad command. Type HELP.', 13, 10, 0
 disk_test_ok db 'EDD LBA 0 read OK (0x55AA signature).', 13, 10, 0
 disk_unavailable_text db 'EDD disk access is not supported by this BIOS drive.', 13, 10, 0
 disk_read_error_text db 'EDD disk read failed.', 13, 10, 0
 disk_bad_signature_text db 'LBA 0 was read, but its 0x55AA signature is missing.', 13, 10, 0
+partitions_header db 'Primary MBR partitions (hex):', 13, 10, 0
+partition_type_text db '  type=0x', 0
+partition_start_text db ' start=0x', 0
+partition_size_text db ' sectors=0x', 0
+no_partitions_text db 'No primary partitions found.', 13, 10, 0
+partition_error_text db 'Invalid MBR or disk read error.', 13, 10, 0
 line_buffer times LINE_SIZE db 0
 
 %include "kernel/disk.asm"
