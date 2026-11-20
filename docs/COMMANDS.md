@@ -1,70 +1,201 @@
-# Old-DOS command and filesystem specification
+# Old-DOS phased development plan
 
-This document records the planned user-facing behavior for the Old-DOS shell.
-It is a design specification; features marked planned are not implemented yet.
+This is the implementation roadmap for Old-DOS. The current 0.1 prototype only
+has a BIOS boot sector, a small 16-bit kernel, text console, keyboard line input,
+and the built-in commands `HELP`, `CLS`, `VER`, `ECHO`, and `REBOOT`.
+Everything below is planned until implemented and tested.
 
-## Drives and filesystems
+## Product goals
 
-- `S:` is the system drive and uses the native Old-DOS File System (ODFS).
-- ODFS is the native filesystem for the main system partition.
-- FAT12 and FAT16 are supported as additional filesystem formats.
-- The filesystem layer should expose one common interface to shell commands, regardless of the underlying filesystem.
-- ODFS should use 32-bit sector addressing and support nested directories and long filenames.
+- Keep the current 16-bit x86 BIOS/real-mode target for the first releases.
+- Use `S:` for the system volume, formatted with the native ODFS filesystem.
+- Support FAT12 and FAT16 volumes as additional drives.
+- Expose one common filesystem API to the shell and editor.
+- Never silently overwrite files or discard unsaved editor content.
 
-The drive letters are a logical Old-DOS convention. Actual disk and partition discovery/mounting must assign letters based on detected volumes; the system volume is assigned `S:`.
+## Phase 0 — Stabilize the prototype
 
-## Commands
+**Goal:** make the existing bootable baseline repeatable before adding storage.
 
-| Command | Purpose | Planned behavior |
-| --- | --- | --- |
-| `HELP` | Help | List built-in commands |
-| `CLS` | Clear screen | Clear the text console |
-| `VER` | Version | Display Old-DOS version |
-| `ECHO text` | Print text | Print the supplied text |
-| `REBOOT` | Restart | Reboot through BIOS |
-| `DIR [path]` | Directory listing | List files and subdirectories |
-| `COPY source destination` | Copy | Copy a file without silently overwriting a destination |
-| `DEL file` | Delete | Delete a file, with safeguards for protected system files |
-| `CAT file` | Display file | Print a text file to the console |
-| `EDIT file` | Text editor | Open or create a text file in the built-in editor |
-| `MKDIR path` | Create directory | Create a directory, including a single requested path component |
-| `CRTF file` | Create file | Create an empty file without opening the editor |
+Tasks:
+- Keep NASM build steps deterministic on Windows and Linux.
+- Add build checks for the 512-byte boot sector, boot signature, and kernel size.
+- Add a documented PowerShell build/run script so GNU Make is optional on Windows.
+- Test boot, prompt, backspace, empty input, all existing commands, and reboot in QEMU.
+- Record known memory layout and bootloader/kernel loading limits.
 
-### CRTF — CReaTe File
+Exit criteria:
+- A clean checkout builds using the documented commands.
+- The generated floppy image boots in QEMU on a clean run.
+- Existing shell commands pass a short manual test checklist.
 
-Example:
+## Phase 1 — Kernel foundations
 
-```dos
-S:\> CRTF NOTES.TXT
-File created: NOTES.TXT
-```
+**Goal:** prepare the kernel for drivers and larger features.
 
-Safety rules:
+Tasks:
+- Introduce a consistent console API (print, clear, cursor, scrolling).
+- Introduce keyboard input as key events, preserving modifier keys and scan codes.
+- Separate shell parsing from command implementations.
+- Define a memory map and reserve safe regions for kernel, stack, buffers, and disk I/O.
+- Expand the boot path beyond the current fixed 4 KiB kernel load limit (for example, a second-stage loader).
 
-1. If the target does not exist, create an empty file.
-2. If the target already exists, do not modify or truncate it.
-3. In that case, print `File already exists` and return to the prompt.
-4. Invalid paths, read-only media, and insufficient space must produce clear errors.
+Exit criteria:
+- Shell and console use shared APIs rather than duplicated BIOS calls.
+- Key events expose Ctrl, Alt, Shift, Enter, Backspace, and ordinary keys.
+- Kernel loading is no longer limited to the current eight sectors.
 
-### EDIT keyboard controls
+## Phase 2 — BIOS disk I/O and volume discovery
 
-The built-in editor is planned to support:
+**Goal:** read and write sectors safely.
 
-- `Ctrl+O`: begin save; show a filename prompt or confirm the current filename.
-- `Enter`: confirm the save.
-- `Ctrl+X`: exit. If there are unsaved changes, ask whether to save, discard, or cancel.
-- `Alt+Shift`: switch the keyboard layout between English and Russian.
+Tasks:
+- Add BIOS INT 13h disk services, preferring extended LBA access when supported.
+- Provide sector read/write APIs with bounds checks and error reporting.
+- Detect BIOS drives and read MBR partition tables.
+- Identify supported partition types and volume boundaries.
+- Define a stable drive-letter assignment policy: system volume is `S:`; other volumes receive available letters.
+- Add a read-only disk inspection/debug command before enabling writes.
 
-The editor must not discard unsaved changes without confirmation.
+Exit criteria:
+- QEMU disk images can be read by LBA and sector contents can be verified.
+- Invalid LBAs and BIOS errors are reported without hanging.
+- Partition boundaries are checked before any filesystem driver accesses a volume.
 
-## Implementation order
+## Phase 3 — Filesystem interface and ODFS format
 
-1. Disk I/O and partition/volume discovery.
-2. Filesystem abstraction and ODFS on the system volume.
-3. FAT12 driver, then FAT16 driver.
-4. Path parsing and common directory/file operations.
-5. Shell commands: `DIR`, `MKDIR`, `CRTF`, `CAT`, `COPY`, and `DEL`.
-6. Text editor with safe save/exit behavior.
-7. Keyboard layout switching and localized console messages.
+**Goal:** design and implement the native filesystem for `S:`.
 
-Until each item is implemented and tested, it must be described as planned rather than available.
+Tasks:
+- Define a filesystem interface: mount, unmount, lookup, list, create file,
+  create directory, read, write, delete, and get free space.
+- Publish an ODFS on-disk format specification with a magic value, version,
+  sector size, volume size, metadata locations, and feature flags.
+- Use 32-bit LBA/sector addressing.
+- Define directory records, long filename encoding, file metadata, and allocation.
+- Add allocation tracking and consistency checks.
+- Design safe metadata update behavior; document recovery limitations before
+  claiming crash consistency.
+- Implement format/mount/read-only validation first, then writable operations.
+- Reserve `S:` for the mounted ODFS system volume.
+
+Exit criteria:
+- ODFS volumes can be identified and validated.
+- Files and nested directories survive unmount/remount (or emulator restart).
+- Corrupt or unsupported ODFS metadata is rejected safely.
+
+## Phase 4 — FAT12 and FAT16 drivers
+
+**Goal:** use standard FAT volumes as secondary storage.
+
+Tasks:
+- Implement FAT12 mount, root directory listing, file read, and path lookup.
+- Add FAT12 create/write/delete only after read operations are tested.
+- Implement FAT16 using the same filesystem interface.
+- Handle FAT copies, cluster chains, end-of-chain markers, bad clusters,
+  free-cluster allocation, and volume bounds.
+- Enforce each format's filename and size limitations; do not pretend FAT
+  supports ODFS long names.
+
+Exit criteria:
+- Known-good FAT12 and FAT16 test images mount and list correctly.
+- File contents match known test fixtures after reads.
+- Write/delete tests do not corrupt neighboring files or FAT metadata.
+
+## Phase 5 — Paths, drive letters, and shell file commands
+
+**Goal:** make files usable from the command prompt on ODFS and FAT volumes.
+
+Tasks:
+- Implement path parsing for absolute paths, relative paths, current directory,
+  drive prefixes, separators, and `.` / `..`.
+- Add `DIR [path]`.
+- Add `MKDIR path`.
+- Add `CRTF file` (CReaTe File): create an empty file only.
+- If a `CRTF` target already exists, print `File already exists` and leave
+  its contents unchanged.
+- Add `CAT file` for text output.
+- Add `COPY source destination`; reject existing destinations unless an
+  explicit future overwrite option is supplied.
+- Add `DEL file` with protection for critical system files.
+- Report read-only media, missing paths, invalid names, and insufficient space.
+
+Exit criteria:
+- All commands work on ODFS and on mounted FAT12/FAT16 volumes where supported.
+- Tests cover missing files, existing files, nested paths, full volumes,
+  read-only media, and cross-volume copies.
+
+## Phase 6 — Text editor
+
+**Goal:** add a reliable built-in editor.
+
+Tasks:
+- Add `EDIT [file]` with insert, delete, cursor movement, and scrolling.
+- Support opening an existing text file and creating a new one.
+- `Ctrl+O` opens/confirms the save operation; `Enter` confirms the filename
+  or save action.
+- `Ctrl+X` exits.
+- If there are unsaved changes, offer Save, Discard, and Cancel.
+- Save through the common filesystem interface; handle disk-full and write errors.
+- Set and document an initial editor size/line-length limit until dynamic
+  memory management is available.
+
+Exit criteria:
+- New and existing files can be edited and reopened with correct contents.
+- Exiting with unsaved changes never silently loses data.
+- Failed saves leave the previous file intact where the filesystem supports
+  safe replacement.
+
+## Phase 7 — English/Russian keyboard layout and localization
+
+**Goal:** make text entry usable in both languages.
+
+Tasks:
+- Implement `Alt+Shift` layout switching between English and Russian.
+- Keep physical key events separate from layout translation.
+- Display the active layout in the status area or prompt.
+- Ensure editor text entry and shell input use the selected layout.
+- Add localized messages only after the keyboard and text encoding strategy
+  (including Cyrillic rendering) is defined.
+
+Exit criteria:
+- The layout toggles reliably without interfering with Ctrl shortcuts.
+- English and Russian text can be entered and displayed in supported contexts.
+- Editor save/reopen preserves the chosen character encoding.
+
+## Phase 8 — Integration, recovery, and release
+
+**Goal:** make the features work together as a usable release.
+
+Tasks:
+- Add automated image-based tests for boot and filesystem operations where practical.
+- Test ODFS and FAT12/FAT16 images with clean, full, read-only, and damaged cases.
+- Document how to create test disk images and back up data.
+- Add version reporting and update the README with only verified features.
+- Tag the release only after all phase exit criteria pass.
+
+Exit criteria:
+- A fresh user can build, boot, create folders/files, edit, copy, list, read,
+  and delete test files on supported filesystems.
+- Documentation distinguishes implemented features from planned work.
+
+## Command reference (planned)
+
+| Command / shortcut | Meaning |
+| --- | --- |
+| `DIR [path]` | List directory contents |
+| `MKDIR path` | Create a directory |
+| `CRTF file` | Create an empty file (CReaTe File); never overwrite |
+| `CAT file` | Display a text file |
+| `COPY source destination` | Copy a file; no silent overwrite |
+| `DEL file` | Delete a file |
+| `EDIT [file]` | Open the text editor |
+| `Ctrl+O`, then `Enter` | Save/confirm in the editor |
+| `Ctrl+X` | Exit the editor; prompt if changes are unsaved |
+| `Alt+Shift` | Switch English/Russian keyboard layout |
+
+## Current implementation status
+
+Only Phase 0's original bootable prototype exists today. Phases 0–8 above are
+planning milestones; do not describe a feature as implemented until its exit
+criteria have been tested.
