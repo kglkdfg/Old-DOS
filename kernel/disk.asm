@@ -95,6 +95,11 @@ disk_read_lba:
     jmp .bad
 
 .ok:
+    xor ax, ax
+    mov ds, ax
+    mov ax, [disk_dap + 2]
+    cmp ax, [disk_request_count]
+    jne .bad
     pop es
     pop ds
     popad
