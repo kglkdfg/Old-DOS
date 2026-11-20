@@ -163,21 +163,49 @@ Exit criteria:
 - English and Russian text can be entered and displayed in supported contexts.
 - Editor save/reopen preserves the chosen character encoding.
 
-## Phase 8 — Integration, recovery, and release
+## Phase 8 — Integration
 
-**Goal:** make the features work together as a usable release.
+**Goal:** connect all implemented subsystems into one coherent operating system.
 
 Tasks:
-- Add automated image-based tests for boot and filesystem operations where practical.
-- Test ODFS and FAT12/FAT16 images with clean, full, read-only, and damaged cases.
-- Document how to create test disk images and back up data.
-- Add version reporting and update the README with only verified features.
-- Tag the release only after all phase exit criteria pass.
+- Connect disk I/O, volume discovery, filesystem drivers, path handling, shell,
+  editor, and keyboard layout modules through documented interfaces.
+- Verify drive letters and current-directory behavior consistently across commands.
+- Ensure ODFS is used for the system volume `S:` and FAT12/FAT16 volumes mount
+  through the same filesystem API.
+- Add clear error propagation between drivers, filesystem code, and shell.
+- Update documentation to describe the integrated architecture and known limitations.
 
 Exit criteria:
-- A fresh user can build, boot, create folders/files, edit, copy, list, read,
-  and delete test files on supported filesystems.
-- Documentation distinguishes implemented features from planned work.
+- The subsystems work together in a complete user workflow.
+- No feature relies on a temporary stub where a real implementation is required.
+- The integrated build boots and can access each supported filesystem.
+
+## Phase 9 — Testing and verification
+
+**Goal:** systematically test the complete system before calling it a release.
+
+Tasks:
+- Create repeatable test disk images and known file/directory fixtures.
+- Test boot and kernel startup on clean, malformed, and unsupported disk images.
+- Test ODFS format, mount, create, read, write, rename (if implemented), delete,
+  directory traversal, free-space accounting, and remount persistence.
+- Test FAT12 and FAT16 against known-good images, including cluster-chain edge cases.
+- Test shell commands with valid paths, missing paths, existing destinations,
+  nested directories, full disks, and read-only media.
+- Test editor insertion, deletion, cursor movement, save, cancel, exit, and
+  unsaved-change prompts.
+- Test Alt+Shift switching, modifier-key combinations, and Cyrillic text handling.
+- Test disk-full, write failures, corrupted metadata, invalid sectors, and
+  interrupted operations; verify that errors do not silently destroy data.
+- Run regression tests after every bug fix and record the results.
+- Test in QEMU and, where practical, on real BIOS-compatible hardware.
+
+Exit criteria:
+- All critical test cases pass and results are recorded.
+- No known data-loss or filesystem-corruption bugs remain in supported workflows.
+- Any unsupported feature or limitation is clearly documented.
+- A release candidate is approved only after this phase passes.
 
 ## Command reference (planned)
 
@@ -196,6 +224,6 @@ Exit criteria:
 
 ## Current implementation status
 
-Only Phase 0's original bootable prototype exists today. Phases 0–8 above are
-planning milestones; do not describe a feature as implemented until its exit
-criteria have been tested.
+Only the original 0.1 bootable prototype exists today. Phases 0–9 are planning
+milestones; do not describe a feature as implemented until its exit criteria
+have been tested.
