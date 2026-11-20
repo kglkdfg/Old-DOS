@@ -13,7 +13,11 @@ start:
     mov es, ax
     mov ss, ax
     mov sp, 0x7C00
+    mov [disk_boot_drive], dl
     sti
+
+    ; Probe BIOS EDD support. Disk reads remain unavailable if this fails.
+    call disk_init
     cld
 
     ; Set 80x25 color text mode.
@@ -243,3 +247,5 @@ help_text db 'Commands:', 13, 10
 version_text db 'Old-DOS version 0.1 (BIOS, 16-bit real mode)', 13, 10, 0
 unknown_text db 'Bad command. Type HELP.', 13, 10, 0
 line_buffer times LINE_SIZE db 0
+
+%include "kernel/disk.asm"
