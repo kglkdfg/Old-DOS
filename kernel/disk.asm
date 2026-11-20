@@ -118,6 +118,7 @@ disk_boot_drive db 0
 disk_edd_supported db 0
 disk_retry_count db 0
 disk_request_count dw 0
+disk_test_buffer times 512 db 0
 align 4
 disk_dap:
     db 0x10, 0
