@@ -1,0 +1,29 @@
+name: Old-DOS build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y nasm make
+
+      - name: Build floppy image
+        run: make clean all
+
+      - name: Verify image size and boot signature
+        run: |
+          test "$(stat -c %s build/olddos.img)" -eq 1474560
+          test "$(stat -c %s build/boot.bin)" -eq 512
+          test "$(od -An -tx1 -j510 -N2 build/boot.bin | tr -d ' \n')" = "55aa"
+          test "$(stat -c %s build/kernel.bin)" -le 4096
