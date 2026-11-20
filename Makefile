@@ -19,7 +19,7 @@ $(BOOT_BIN): boot/boot.asm | $(BUILD_DIR)
 	$(NASM) -f bin $< -o $@
 	test $$(wc -c < $@) -eq 512
 
-$(KERNEL_BIN): kernel/kernel.asm | $(BUILD_DIR)
+$(KERNEL_BIN): kernel/kernel.asm kernel/disk.asm | $(BUILD_DIR)
 	$(NASM) -f bin $< -o $@
 	test $$(wc -c < $@) -le $(KERNEL_MAX_SIZE)
 
