@@ -65,7 +65,7 @@ if ($VerifiedImage[510] -ne 0x55 -or $VerifiedImage[511] -ne 0xAA) {
 }
 for ($i = 0; $i -lt $KernelBytes.Length; $i++) {
     if ($VerifiedImage[512 + $i] -ne $KernelBytes[$i]) {
-        throw "Kernel verification failed at image offset $($512 + $i)."
+        throw "Kernel verification failed at image offset $(512 + $i)."
     }
 }
 
