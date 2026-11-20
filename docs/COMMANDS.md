@@ -224,15 +224,12 @@ Exit criteria:
 
 ## Current implementation status
 
-The original 0.1 bootable prototype remains the only implemented OS runtime.
-No filesystem driver or file command has been added to the kernel in this batch.
+The 0.1 shell remains the only user-facing runtime, but the boot path and a first read-only BIOS disk service have now been added. No filesystem driver or file command has been added.
 
 - Phase 0: PowerShell build/image-validation scripts and a GitHub Actions build
   check are present. A developer still needs to run them and verify QEMU boot.
-- Phase 1: architecture and module-interface design documented; console/keyboard
-  refactor and larger-kernel loader are not implemented.
-- Phase 2: BIOS disk I/O and partition-discovery design documented; disk driver
-  and partition parser are not implemented.
+- Phase 1: architecture is documented. The loader now uses EDD LBA reads with a floppy-only CHS fallback, but still loads a fixed 4 KiB payload; console/keyboard refactoring is not implemented.
+- Phase 2: a read-only EDD capability probe and LBA sector-read routine are present in `kernel/disk.asm`. Runtime verification, write support, MBR parsing, and volume bounds are not implemented.
 - Phase 3: proposed ODFS v1 format documented; formatter, mount, and driver are
   not implemented. Format remains draft pending review and fixture tests.
 - Phase 4: FAT12/FAT16 driver requirements documented; drivers are not
