@@ -68,8 +68,15 @@ Development is divided into ten phases:
     regression, and QEMU/hardware verification before release.
 
 See [docs/COMMANDS.md](docs/COMMANDS.md) for the detailed tasks and exit criteria
-for every phase. These are plans, not claims that the features are already
-implemented.
+for every phase. Filesystem work in phases 3–5 currently consists of design
+documents only; the kernel does not yet contain ODFS/FAT drivers or file commands.
+
+Design documents:
+- [ODFS v1 format proposal](docs/ODFS-SPEC.md)
+- [Common filesystem API](docs/FILESYSTEM-API.md)
+- [FAT12/FAT16 driver requirements](docs/FAT12-FAT16.md)
+- [Shell file command specification](docs/FILE-COMMANDS.md)
+- [BIOS disk I/O prerequisites](docs/DISK-IO.md)
 
 ## Filesystem architecture
 
