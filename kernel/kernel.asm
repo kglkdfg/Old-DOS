@@ -117,7 +117,7 @@ shell:
     mov si, partitions_header
     call print_string
     mov si, disk_partitions
-    mov bp, [disk_partition_count]
+    movzx bp, byte [disk_partition_count]
 .partition_loop:
     mov di, si
     mov si, partition_type_text
