@@ -48,6 +48,8 @@ disk_read_lba:
 
     cmp byte [disk_edd_supported], 1
     jne .bad
+    mov [disk_dap + 8], eax
+    mov [disk_request_count], cx
     test cx, cx
     jz .bad
     cmp cx, 127
@@ -64,16 +66,14 @@ disk_read_lba:
     mov [disk_dap + 2], cx
     mov [disk_dap + 4], bx
     mov [disk_dap + 6], es
-    mov [disk_dap + 8], eax ; overwritten below with the caller's LBA
-    ; Recover the caller's LBA from the saved EAX on the stack.
-    ; PUSHAD layout at [ESP+28] is the original EAX.
-    mov eax, [ss:esp + 28]
-    mov [disk_dap + 8], eax
     mov dword [disk_dap + 12], 0
 
     mov byte [disk_retry_count], DISK_RETRIES
 .retry:
-    mov word [disk_dap + 2], cx
+    mov ax, 0
+    mov ds, ax
+    mov ax, [disk_request_count]
+    mov [disk_dap + 2], ax
     mov si, disk_dap
     mov ah, 0x42
     mov dl, [disk_boot_drive]
@@ -83,6 +83,8 @@ disk_read_lba:
     xor ah, ah
     mov dl, [disk_boot_drive]
     int 0x13
+    xor ax, ax
+    mov ds, ax
     dec byte [disk_retry_count]
     jnz .retry
     jmp .bad
@@ -104,6 +106,7 @@ disk_read_lba:
 disk_boot_drive db 0
 disk_edd_supported db 0
 disk_retry_count db 0
+disk_request_count dw 0
 align 4
 disk_dap:
     db 0x10, 0
