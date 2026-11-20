@@ -23,7 +23,7 @@ and provides a keyboard-driven command prompt.
 | `PARTITIONS` | List validated primary MBR partitions (hexadecimal fields) |
 
 Commands are case-insensitive. This is an early educational prototype, not yet
-a fully DOS-compatible operating system. The kernel now contains a read-only BIOS EDD sector-read service, `DISKTEST`, and a `PARTITIONS` command. The MBR parser validates the 0x55AA signature, boot flags, non-empty ranges, 32-bit range overflow, and overlaps. It lists primary entries only; it does not yet know device capacity, traverse extended partitions, or mount volumes. Runtime behavior still needs QEMU verification. Filesystem access, a text editor,
+a fully DOS-compatible operating system. The kernel now contains a read-only BIOS EDD sector-read service, `DISKTEST`, and a `PARTITIONS` command. The MBR parser validates the 0x55AA signature, boot flags, non-empty ranges, 32-bit range overflow, and overlaps. It queries BIOS EDD capacity when supported and checks sector bounds; it lists primary entries only, does not traverse extended partitions, and does not mount volumes. Runtime behavior still needs QEMU verification. Filesystem access, a text editor,
 keyboard layout switching, and the additional commands below are planned, not
 implemented in the current kernel.
 
