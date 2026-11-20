@@ -50,9 +50,9 @@ discarding them.
 
 ## Development plan
 
-Development is divided into explicit phases with tasks and exit criteria:
+Development is divided into ten phases:
 
-1. **Phase 0 — Stabilize prototype:** repeatable builds and baseline QEMU tests.
+1. **Phase 0 — Stabilize prototype:** repeatable builds and baseline checks.
 2. **Phase 1 — Kernel foundations:** console, keyboard events, memory layout,
    and a larger-kernel loading path.
 3. **Phase 2 — Disk I/O:** BIOS sector access, MBR partition discovery, volumes.
@@ -60,10 +60,12 @@ Development is divided into explicit phases with tasks and exit criteria:
 5. **Phase 4 — FAT12/FAT16:** drivers for additional volumes.
 6. **Phase 5 — Shell file commands:** paths, `DIR`, `MKDIR`, `CRTF`, `CAT`,
    `COPY`, and `DEL`.
-7. **Phase 6 — Text editor:** `EDIT`, save with `Ctrl+O` + `Enter`, exit
-   with `Ctrl+X`, and protection against losing unsaved work.
+7. **Phase 6 — Text editor:** `EDIT`, safe saving, and exit behavior.
 8. **Phase 7 — Keyboard layouts:** English/Russian switching with `Alt+Shift`.
-9. **Phase 8 — Integration and release:** tests, recovery cases, and verified docs.
+9. **Phase 8 — Integration:** connect the kernel, drivers, filesystems, shell,
+   editor, and keyboard modules.
+10. **Phase 9 — Testing:** comprehensive functional, filesystem, failure,
+    regression, and QEMU/hardware verification before release.
 
 See [docs/COMMANDS.md](docs/COMMANDS.md) for the detailed tasks and exit criteria
 for every phase. These are plans, not claims that the features are already
