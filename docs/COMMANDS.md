@@ -2,7 +2,7 @@
 
 This is the implementation roadmap for Old-DOS. The current 0.1 prototype only
 has a BIOS boot sector, a small 16-bit kernel, text console, keyboard line input,
-and the built-in commands `HELP`, `CLS`, `VER`, `ECHO`, `REBOOT`, and `DISKTEST`.
+and the built-in commands `HELP`, `CLS`, `VER`, `ECHO`, `REBOOT`, `DISKTEST`, and `PARTITIONS`.
 Everything below is planned until implemented and tested.
 
 ## Product goals
@@ -221,10 +221,11 @@ Exit criteria:
 | `Ctrl+O`, then `Enter` | Save/confirm in the editor |
 | `Ctrl+X` | Exit the editor; prompt if changes are unsaved |
 | `Alt+Shift` | Switch English/Russian keyboard layout |
+| `PARTITIONS` | List structurally validated primary MBR partition entries |
 
 ## Current implementation status
 
-The 0.1 shell remains the only user-facing runtime, but the boot path and a first read-only BIOS disk service have now been added. No filesystem driver or file command has been added. `DISKTEST` is a read-only diagnostic command, not a filesystem command.
+The 0.1 shell remains the only user-facing runtime, but the boot path and a first read-only BIOS disk service have now been added. No filesystem driver or file command has been added. `DISKTEST` and `PARTITIONS` are read-only disk diagnostics, not filesystem commands.
 
 - Phase 0: PowerShell build/image-validation scripts and a GitHub Actions build
   check are present. A developer still needs to run them and verify QEMU boot.
