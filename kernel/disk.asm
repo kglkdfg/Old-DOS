@@ -55,10 +55,15 @@ disk_read_lba:
     cmp cx, 127
     ja .bad
 
-    ; Reject a destination that crosses the 64 KiB offset boundary.
+    ; Reject a destination that crosses a physical 64 KiB DMA boundary.
+    ; EDD evaluates the linear buffer address, not BX in isolation.
     movzx edx, cx
     shl edx, 9
-    movzx eax, bx
+    movzx eax, es
+    shl eax, 4
+    movzx ebx, bx
+    add eax, ebx
+    and eax, 0xFFFF
     add eax, edx
     cmp eax, 0x10000
     ja .bad
