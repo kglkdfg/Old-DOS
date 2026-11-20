@@ -225,14 +225,22 @@ Exit criteria:
 ## Current implementation status
 
 The original 0.1 bootable prototype remains the only implemented OS runtime.
+No filesystem driver or file command has been added to the kernel in this batch.
 
 - Phase 0: PowerShell build/image-validation scripts and a GitHub Actions build
-  check have been added. Manual clean-checkout and QEMU regression checks remain
-  to be performed by a developer.
-- Phase 1: architecture and module-interface design documented; kernel refactor
-  and larger-kernel loader are not implemented yet.
+  check are present. A developer still needs to run them and verify QEMU boot.
+- Phase 1: architecture and module-interface design documented; console/keyboard
+  refactor and larger-kernel loader are not implemented.
 - Phase 2: BIOS disk I/O and partition-discovery design documented; disk driver
-  and partition parser are not implemented yet.
-- Phases 3–9: planned.
+  and partition parser are not implemented.
+- Phase 3: proposed ODFS v1 format documented; formatter, mount, and driver are
+  not implemented. Format remains draft pending review and fixture tests.
+- Phase 4: FAT12/FAT16 driver requirements documented; drivers are not
+  implemented.
+- Phase 5: file-command behavior and shared filesystem API documented; commands
+  and filesystem API are not implemented.
+- Phases 6–9: planned.
 
-Do not mark a phase complete until all of its exit criteria have been tested.
+Phases 3–5 are design/specification work in this batch, not completed runtime
+features. Do not mark a phase complete until its code and exit criteria have
+been tested.
