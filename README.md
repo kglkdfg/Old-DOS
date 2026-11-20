@@ -4,11 +4,25 @@ An open-source DOS-inspired operating system built from scratch.
 
 **License:** GNU General Public License v3.0 (GPL-3.0)
 
-## Current status
+## Current milestone: boot, console, and built-in commands
 
-The first milestone is a 16-bit x86 BIOS boot sector. It prints a startup
-message and halts. This is not yet a DOS-compatible operating system; kernel,
-shell, filesystem, and DOS command compatibility are planned.
+Old-DOS currently boots in 16-bit x86 real mode through a BIOS boot sector.
+The boot sector loads a small kernel from a floppy image. The kernel initializes
+the text console and provides a keyboard-driven command prompt.
+
+### Commands
+
+| Command | Description |
+| --- | --- |
+| `HELP` | List available commands |
+| `CLS` | Clear the screen |
+| `VER` | Show the OS version |
+| `ECHO text` | Print text |
+| `REBOOT` | Restart the virtual machine |
+
+Commands are case-insensitive. This is an early educational prototype, not yet
+a fully DOS-compatible operating system. Filesystem and external program
+support are not implemented yet.
 
 ## Requirements
 
@@ -16,9 +30,17 @@ shell, filesystem, and DOS command compatibility are planned.
 - GNU Make
 - QEMU with `qemu-system-i386`
 
+On Debian/Ubuntu:
+
+```sh
+sudo apt update
+sudo apt install nasm make qemu-system-x86
+```
+
 ## Build
 
 ```sh
+make clean
 make
 ```
 
@@ -36,18 +58,26 @@ Or launch it directly:
 qemu-system-i386 -drive format=raw,file=build/olddos.img,if=floppy
 ```
 
-## Clean
+Press `Ctrl+C` in the terminal running QEMU to stop it, or close the QEMU
+window.
 
-```sh
-make clean
+## Project layout
+
+```text
+boot/boot.asm       BIOS boot sector (loads the kernel)
+kernel/kernel.asm   16-bit kernel, text console, and command shell
+Makefile            Build floppy image and launch QEMU
 ```
 
-## Project goals
+## Roadmap
 
-- BIOS boot and a small 16-bit real-mode kernel
-- Keyboard and text-mode console
-- Command-line shell
-- FAT-compatible storage
-- DOS-style utilities and program loading
+- [x] BIOS boot sector
+- [x] Load a small 16-bit kernel
+- [x] Text-mode console and keyboard input
+- [x] Basic built-in shell commands
+- [ ] Cursor and screen handling improvements
+- [ ] Disk and FAT12 filesystem support
+- [ ] File commands (`DIR`, `TYPE`, `COPY`, `DEL`)
+- [ ] Load and execute external programs
 
 Contributions, bug reports, and ideas are welcome.
