@@ -20,9 +20,10 @@ and provides a keyboard-driven command prompt.
 | `ECHO text` | Print text |
 | `REBOOT` | Restart the virtual machine |
 | `DISKTEST` | Read LBA 0 through BIOS EDD and verify the 0x55AA signature |
+| `PARTITIONS` | List validated primary MBR partitions (hexadecimal fields) |
 
 Commands are case-insensitive. This is an early educational prototype, not yet
-a fully DOS-compatible operating system. The kernel now contains an initial read-only BIOS EDD sector-read service and a `DISKTEST` command that checks LBA 0 without writing to disk. The command still needs to be exercised in QEMU; the kernel does not mount partitions. Filesystem access, a text editor,
+a fully DOS-compatible operating system. The kernel now contains a read-only BIOS EDD sector-read service, `DISKTEST`, and a `PARTITIONS` command. The MBR parser validates the 0x55AA signature, boot flags, non-empty ranges, 32-bit range overflow, and overlaps. It lists primary entries only; it does not yet know device capacity, traverse extended partitions, or mount volumes. Runtime behavior still needs QEMU verification. Filesystem access, a text editor,
 keyboard layout switching, and the additional commands below are planned, not
 implemented in the current kernel.
 
@@ -142,7 +143,7 @@ a successful QEMU boot still needs to be tested manually.
 ```text
 boot/boot.asm       BIOS boot sector (loads the kernel)
 kernel/kernel.asm   16-bit kernel, text console, and command shell
-kernel/disk.asm     Read-only BIOS EDD LBA disk service
+kernel/disk.asm     Read-only BIOS EDD LBA and primary MBR services
 docs/COMMANDS.md   Phased development plan and filesystem specification
 docs/KERNEL-ARCHITECTURE.md  Kernel module interface plan
 docs/DISK-IO.md     BIOS disk I/O and partition discovery design
