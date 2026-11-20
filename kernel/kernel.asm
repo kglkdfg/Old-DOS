@@ -59,7 +59,7 @@ shell:
     call compare_prefix
     jc .unknown
     cmp byte [si], 0
-    je .echo
+    je .empty_echo
     cmp byte [si], ' '
     jne .unknown
 
