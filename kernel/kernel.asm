@@ -105,6 +105,34 @@ shell:
     call print_string
     jmp shell
 
+.disktest:
+    call disk_init
+    jc .disk_unavailable
+    xor eax, eax
+    mov cx, 1
+    xor ax, ax
+    mov es, ax
+    mov bx, disk_test_buffer
+    call disk_read_lba
+    jc .disk_read_error
+    cmp word [disk_test_buffer + 510], 0xAA55
+    jne .disk_bad_signature
+    mov si, disk_test_ok
+    call print_string
+    jmp shell
+.disk_unavailable:
+    mov si, disk_unavailable_text
+    call print_string
+    jmp shell
+.disk_read_error:
+    mov si, disk_read_error_text
+    call print_string
+    jmp shell
+.disk_bad_signature:
+    mov si, disk_bad_signature_text
+    call print_string
+    jmp shell
+
 .reboot:
     int 0x19
     jmp $
@@ -237,15 +265,21 @@ cmd_help db 'HELP', 0
 cmd_cls db 'CLS', 0
 cmd_ver db 'VER', 0
 cmd_reboot db 'REBOOT', 0
+cmd_disktest db 'DISKTEST', 0
 cmd_echo db 'ECHO', 0
 help_text db 'Commands:', 13, 10
           db '  HELP   Show this help', 13, 10
           db '  CLS    Clear the screen', 13, 10
           db '  VER    Show OS version', 13, 10
           db '  ECHO   Print text', 13, 10
-          db '  REBOOT Restart the machine', 13, 10, 0
+          db '  REBOOT Restart the machine', 13, 10
+          db '  DISKTEST Read LBA 0 and verify its boot signature', 13, 10, 0
 version_text db 'Old-DOS version 0.1 (BIOS, 16-bit real mode)', 13, 10, 0
 unknown_text db 'Bad command. Type HELP.', 13, 10, 0
+disk_test_ok db 'EDD LBA 0 read OK (0x55AA signature).', 13, 10, 0
+disk_unavailable_text db 'EDD disk access is not supported by this BIOS drive.', 13, 10, 0
+disk_read_error_text db 'EDD disk read failed.', 13, 10, 0
+disk_bad_signature_text db 'LBA 0 was read, but its 0x55AA signature is missing.', 13, 10, 0
 line_buffer times LINE_SIZE db 0
 
 %include "kernel/disk.asm"
