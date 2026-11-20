@@ -1,9 +1,9 @@
 # BIOS disk I/O and volume discovery design
 
 This document defines the scope of development Phase 2. A first read-only
-EDD sector reads and read-only primary MBR discovery are now present. Device-capacity
-checks, extended/logical partition traversal, volume mounting, and write support
-are not implemented.
+EDD sector reads and read-only primary MBR discovery are now present. Extended/logical partition traversal, volume mounting, and write support
+are not implemented. Capacity checks are applied when BIOS AH=48h supplies a
+supported 512-byte-sector geometry.
 
 ## Disk service
 
@@ -11,7 +11,8 @@ The first implementation will use BIOS INT 13h from real mode.
 
 - Preserve the BIOS boot drive number passed to the boot sector in DL. The stage-1 loader now does this and passes it to the kernel.
 - The stage-1 loader probes EDD and reads the fixed eight-sector kernel payload from LBA 1. It retries failed reads and uses CHS only for floppy boot media.
-- `kernel/disk.asm` provides `disk_init`, `disk_read_lba`, and `disk_scan_mbr`. `disk_read_lba` accepts a 32-bit LBA in EAX, a sector count in CX (1–127), and a destination in ES:BX; it returns status in CF.
+- `kernel/disk.asm` provides `disk_init`, `disk_get_params`, `disk_read_lba`, and `disk_scan_mbr`.
+- `disk_get_params` queries INT 13h AH=48h and accepts capacity only for 512-byte sectors and a sector count that fits the current 32-bit LBA API. When available, reads and MBR partition ranges are checked against this capacity. `disk_read_lba` accepts a 32-bit LBA in EAX, a sector count in CX (1–127), and a destination in ES:BX; it returns status in CF.
 - `disk_scan_mbr` reads LBA 0, checks the 0x55AA signature, validates the four primary entries, rejects invalid boot flags, zero start/count values, 32-bit end-LBA overflow, and overlapping non-empty partitions. It returns compact 12-byte records in `disk_partitions` and the count in `disk_partition_count`.
 - The `PARTITIONS` shell command displays each validated primary partition's type, start LBA, and sector count in hexadecimal.
 - The kernel still has a fixed 4 KiB load limit; the loader is not yet metadata-driven.
@@ -61,6 +62,7 @@ arbitrary buffers can cross a 64 KiB DMA boundary.
 
 - [x] EDD capability detection routine and read-only LBA API are present in the kernel source (runtime verification pending).
 - [ ] LBA sector reads work in QEMU and are verified against known patterns.
+- [x] Query BIOS EDD capacity where supported and reject reads/partitions beyond the reported device size.
 - [ ] Read API is verified for zero/oversized counts, physical 64 KiB DMA boundaries, and BIOS errors; write API is not implemented.
 - [x] MBR signature and primary partition entries are parsed read-only with structural and overlap checks (device-capacity validation and extended chains remain pending).
 - [ ] Invalid LBAs and BIOS errors return to the caller without hanging.
