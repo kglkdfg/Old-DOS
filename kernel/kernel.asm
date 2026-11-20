@@ -75,6 +75,10 @@ shell:
     call newline
     jmp shell
 
+.empty_echo:
+    call newline
+    jmp shell
+
 .help:
     mov si, help_text
     call print_string
