@@ -224,6 +224,15 @@ Exit criteria:
 
 ## Current implementation status
 
-Only the original 0.1 bootable prototype exists today. Phases 0–9 are planning
-milestones; do not describe a feature as implemented until its exit criteria
-have been tested.
+The original 0.1 bootable prototype remains the only implemented OS runtime.
+
+- Phase 0: PowerShell build/image-validation scripts and a GitHub Actions build
+  check have been added. Manual clean-checkout and QEMU regression checks remain
+  to be performed by a developer.
+- Phase 1: architecture and module-interface design documented; kernel refactor
+  and larger-kernel loader are not implemented yet.
+- Phase 2: BIOS disk I/O and partition-discovery design documented; disk driver
+  and partition parser are not implemented yet.
+- Phases 3–9: planned.
+
+Do not mark a phase complete until all of its exit criteria have been tested.
