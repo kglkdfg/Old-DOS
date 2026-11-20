@@ -6,7 +6,7 @@
 ;   disk_read_lba:   input EAX=LBA (32-bit), CX=sector count (1..127),
 ;                    ES:BX=destination; CF=0 on success.
 ;
-; The destination buffer must not cross a 64 KiB offset boundary.
+; The physical destination buffer must not cross a 64 KiB DMA boundary.
 ; This module is read-only. Writes and CHS fallback are not implemented here.
 
 DISK_RETRIES equ 3
@@ -59,7 +59,8 @@ disk_read_lba:
     ; EDD evaluates the linear buffer address, not BX in isolation.
     movzx edx, cx
     shl edx, 9
-    movzx eax, es
+    mov ax, es
+    movzx eax, ax
     shl eax, 4
     movzx ebx, bx
     add eax, ebx
