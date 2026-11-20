@@ -194,7 +194,6 @@ disk_scan_mbr:
     jne .invalid
 
     mov byte [disk_partition_count], 0
-    mov byte [disk_partition_invalid], 0
     mov si, disk_mbr_buffer + 446
     mov di, disk_partitions
     mov bp, 4
