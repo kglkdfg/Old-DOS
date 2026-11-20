@@ -34,6 +34,7 @@ disk_init:
     popad
     cmp byte [disk_edd_supported], 1
     jne .unsupported
+    call disk_get_params
     clc
     ret
 .unsupported:
@@ -50,6 +51,15 @@ disk_read_lba:
     jne .bad
     mov [disk_dap + 8], eax
     mov [disk_request_count], cx
+    cmp byte [disk_capacity_valid], 1
+    jne .capacity_unavailable
+    mov edx, eax
+    movzx ecx, cx
+    add edx, ecx
+    jc .bad
+    cmp edx, [disk_total_sectors]
+    ja .bad
+.capacity_unavailable:
     test cx, cx
     jz .bad
     cmp cx, 127
@@ -119,6 +129,43 @@ disk_edd_supported db 0
 disk_retry_count db 0
 disk_request_count dw 0
 disk_test_buffer times 512 db 0
+
+; Query EDD drive parameters (INT 13h AH=48h).
+; Capacity is accepted only for 512-byte sectors and a 32-bit sector count.
+disk_get_params:
+    pushad
+    push ds
+    push es
+    xor ax, ax
+    mov ds, ax
+    mov byte [disk_capacity_valid], 0
+    mov word [disk_params_buffer], 0x001E
+    mov si, disk_params_buffer
+    mov ah, 0x48
+    mov dl, [disk_boot_drive]
+    int 0x13
+    jc .done
+    cmp word [disk_params_buffer + 24], 512
+    jne .done
+    cmp dword [disk_params_buffer + 20], 0
+    jne .done
+    mov eax, [disk_params_buffer + 16]
+    test eax, eax
+    jz .done
+    mov [disk_total_sectors], eax
+    mov byte [disk_capacity_valid], 1
+.done:
+    pop es
+    pop ds
+    popad
+    cmp byte [disk_capacity_valid], 1
+    jne .unsupported
+    clc
+    ret
+.unsupported:
+    stc
+    ret
+
 ; Scan and validate the four primary MBR partition entries.
 ; Output:
 ;   CF=0: MBR signature valid and table structurally valid.
@@ -175,6 +222,11 @@ disk_scan_mbr:
     jz .invalid
     add eax, edx
     jc .invalid
+    cmp byte [disk_capacity_valid], 1
+    jne .capacity_unchecked
+    cmp eax, [disk_total_sectors]
+    ja .invalid
+.capacity_unchecked:
 
     ; Check overlap against every earlier accepted primary partition.
     push si
@@ -232,8 +284,10 @@ disk_scan_mbr:
     ret
 
 disk_partition_count db 0
-disk_partition_invalid db 0
+disk_capacity_valid db 0
+disk_total_sectors dd 0
 align 4
+disk_params_buffer times 30 db 0
 disk_mbr_buffer times 512 db 0
 disk_partitions times 4*12 db 0
 
