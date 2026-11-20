@@ -119,6 +119,124 @@ disk_edd_supported db 0
 disk_retry_count db 0
 disk_request_count dw 0
 disk_test_buffer times 512 db 0
+; Scan and validate the four primary MBR partition entries.
+; Output:
+;   CF=0: MBR signature valid and table structurally valid.
+;   CF=1: disk read failed, signature invalid, overflow, or overlap.
+;   disk_partition_count: number of non-empty primary entries.
+;   disk_partitions: four 12-byte records:
+;       +0 type byte, +1 boot flag byte, +2 start LBA dword,
+;       +6 sector count dword, +10 reserved word.
+; Extended partition entries are reported as types only; logical
+; partitions are not traversed by this routine.
+disk_scan_mbr:
+    pushad
+    push ds
+    push es
+
+    xor ax, ax
+    mov ds, ax
+    mov es, ax
+    xor eax, eax
+    mov cx, 1
+    mov bx, disk_mbr_buffer
+    call disk_read_lba
+    jc .invalid
+
+    cmp word [disk_mbr_buffer + 510], 0xAA55
+    jne .invalid
+
+    mov byte [disk_partition_count], 0
+    mov byte [disk_partition_invalid], 0
+    mov si, disk_mbr_buffer + 446
+    mov di, disk_partitions
+    mov bp, 4
+
+.entry:
+    mov al, [si + 4]
+    test al, al
+    jz .next
+    mov [di], al
+    mov al, [si]
+    cmp al, 0
+    je .boot_ok
+    cmp al, 0x80
+    jne .invalid
+.boot_ok:
+    mov [di + 1], al
+    mov eax, [si + 8]
+    mov [di + 2], eax
+    mov edx, [si + 12]
+    mov [di + 6], edx
+
+    test eax, eax
+    jz .invalid
+    test edx, edx
+    jz .invalid
+    add eax, edx
+    jc .invalid
+
+    ; Check overlap against every earlier accepted primary partition.
+    push si
+    push di
+    push bp
+    mov bx, disk_partitions
+    mov cl, [disk_partition_count]
+    xor ch, ch
+.overlap_loop:
+    jcxz .overlap_done
+    mov eax, [di + 2]
+    mov edx, [di + 6]
+    add eax, edx                 ; current exclusive end
+    mov edx, [bx + 2]            ; prior start
+    cmp eax, edx
+    jbe .no_overlap
+    mov eax, [bx + 2]
+    mov edx, [bx + 6]
+    add eax, edx                 ; prior exclusive end
+    mov edx, [di + 2]            ; current start
+    cmp eax, edx
+    ja .overlap_bad
+.no_overlap:
+    add bx, 12
+    loop .overlap_loop
+.overlap_done:
+    pop bp
+    pop di
+    pop si
+    mov word [di + 10], 0
+    inc byte [disk_partition_count]
+    add di, 12
+
+.next:
+    add si, 16
+    dec bp
+    jnz .entry
+
+    pop es
+    pop ds
+    popad
+    clc
+    ret
+
+.overlap_bad:
+    pop bp
+    pop di
+    pop si
+.invalid:
+    mov byte [disk_partition_count], 0
+    pop es
+    pop ds
+    popad
+    stc
+    ret
+
+disk_partition_count db 0
+disk_partition_invalid db 0
+align 4
+disk_mbr_buffer times 512 db 0
+disk_partitions times 4*12 db 0
+
 align 4
 disk_dap:
     db 0x10, 0
