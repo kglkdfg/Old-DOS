@@ -1,8 +1,9 @@
 # BIOS disk I/O and volume discovery design
 
 This document defines the scope of development Phase 2. A first read-only
-EDD implementation is now present, but partition discovery, volume bounds, and
-write support are not implemented.
+EDD sector reads and read-only primary MBR discovery are now present. Device-capacity
+checks, extended/logical partition traversal, volume mounting, and write support
+are not implemented.
 
 ## Disk service
 
@@ -10,7 +11,9 @@ The first implementation will use BIOS INT 13h from real mode.
 
 - Preserve the BIOS boot drive number passed to the boot sector in DL. The stage-1 loader now does this and passes it to the kernel.
 - The stage-1 loader probes EDD and reads the fixed eight-sector kernel payload from LBA 1. It retries failed reads and uses CHS only for floppy boot media.
-- `kernel/disk.asm` provides `disk_init` and `disk_read_lba` for read-only EDD access. `disk_read_lba` accepts a 32-bit LBA in EAX, a sector count in CX (1–127), and a destination in ES:BX; it returns status in CF.
+- `kernel/disk.asm` provides `disk_init`, `disk_read_lba`, and `disk_scan_mbr`. `disk_read_lba` accepts a 32-bit LBA in EAX, a sector count in CX (1–127), and a destination in ES:BX; it returns status in CF.
+- `disk_scan_mbr` reads LBA 0, checks the 0x55AA signature, validates the four primary entries, rejects invalid boot flags, zero start/count values, 32-bit end-LBA overflow, and overlapping non-empty partitions. It returns compact 12-byte records in `disk_partitions` and the count in `disk_partition_count`.
+- The `PARTITIONS` shell command displays each validated primary partition's type, start LBA, and sector count in hexadecimal.
 - The kernel still has a fixed 4 KiB load limit; the loader is not yet metadata-driven.
 - Prefer INT 13h extensions (AH=41h capability check and AH=42h read / AH=43h
   write) when the BIOS reports support.
@@ -39,10 +42,10 @@ arbitrary buffers can cross a 64 KiB DMA boundary.
 - Read sector 0 and validate the MBR signature 0x55AA before parsing entries.
 - Parse all four 16-byte primary partition entries.
 - Treat partition start LBA and sector count as unsigned values.
-- Reject empty, overflowing, out-of-device, or overlapping ranges.
+- Reject non-empty entries with zero start/count, overflowing end LBAs, invalid boot flags, or overlapping ranges. Out-of-device validation is pending a BIOS drive-capacity query.
 - Do not write to partition tables during discovery.
 - Recognize filesystem types in later filesystem-driver phases; Phase 2 only
-  reports partition metadata.
+  reports primary partition metadata. Extended partition chains are not followed yet.
 - Drive letters are assigned by the volume manager in a later integration
   step. The system volume will ultimately be exposed as S:.
 
@@ -59,7 +62,7 @@ arbitrary buffers can cross a 64 KiB DMA boundary.
 - [x] EDD capability detection routine and read-only LBA API are present in the kernel source (runtime verification pending).
 - [ ] LBA sector reads work in QEMU and are verified against known patterns.
 - [ ] Read API is verified for zero/oversized counts, physical 64 KiB DMA boundaries, and BIOS errors; write API is not implemented.
-- [ ] MBR signature and partition entries are parsed safely.
+- [x] MBR signature and primary partition entries are parsed read-only with structural and overlap checks (device-capacity validation and extended chains remain pending).
 - [ ] Invalid LBAs and BIOS errors return to the caller without hanging.
 - [ ] Tests use disposable disk images only.
 
