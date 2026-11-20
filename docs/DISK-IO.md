@@ -1,14 +1,17 @@
 # BIOS disk I/O and volume discovery design
 
-This document defines the intended scope of development Phase 2. The current
-prototype does not yet provide a general-purpose disk driver or partition
-mounting.
+This document defines the scope of development Phase 2. A first read-only
+EDD implementation is now present, but partition discovery, volume bounds, and
+write support are not implemented.
 
 ## Disk service
 
 The first implementation will use BIOS INT 13h from real mode.
 
-- Preserve the BIOS boot drive number passed to the boot sector in DL.
+- Preserve the BIOS boot drive number passed to the boot sector in DL. The stage-1 loader now does this and passes it to the kernel.
+- The stage-1 loader probes EDD and reads the fixed eight-sector kernel payload from LBA 1. It retries failed reads and uses CHS only for floppy boot media.
+- `kernel/disk.asm` provides `disk_init` and `disk_read_lba` for read-only EDD access. `disk_read_lba` accepts a 32-bit LBA in EAX, a sector count in CX (1–127), and a destination in ES:BX; it returns status in CF.
+- The kernel still has a fixed 4 KiB load limit; the loader is not yet metadata-driven.
 - Prefer INT 13h extensions (AH=41h capability check and AH=42h read / AH=43h
   write) when the BIOS reports support.
 - Use a Disk Address Packet for extended LBA transfers.
@@ -23,12 +26,10 @@ The first implementation will use BIOS INT 13h from real mode.
 
 The planned low-level interface is:
 
-- `disk_get_info`: report BIOS drive number and supported access mode.
-- `disk_read_sectors`: read one or more sectors from a 32-bit LBA into a
-  caller-provided real-mode buffer.
-- `disk_write_sectors`: write sectors only after read support and bounds
-  validation have passed.
-- `disk_last_error`: expose the last BIOS status for diagnostics.
+- `disk_init`: probe EDD support for the boot drive.
+- `disk_read_lba`: read 1–127 sectors from a 32-bit LBA into ES:BX using an EDD Disk Address Packet.
+- `disk_write_lba`: planned; not implemented.
+- `disk_last_error`: planned; BIOS status reporting is not yet exposed.
 
 The API must document segment:offset buffer rules and must not assume that
 arbitrary buffers can cross a 64 KiB DMA boundary.
@@ -55,9 +56,9 @@ arbitrary buffers can cross a 64 KiB DMA boundary.
 
 ## Phase 2 completion checklist
 
-- [ ] BIOS disk capability detection works.
+- [x] EDD capability detection routine and read-only LBA API are present in the kernel source (runtime verification pending).
 - [ ] LBA sector reads work in QEMU and are verified against known patterns.
-- [ ] Read/write APIs validate buffers and sector ranges.
+- [ ] Read API is verified for zero/oversized counts, physical 64 KiB DMA boundaries, and BIOS errors; write API is not implemented.
 - [ ] MBR signature and partition entries are parsed safely.
 - [ ] Invalid LBAs and BIOS errors return to the caller without hanging.
 - [ ] Tests use disposable disk images only.
