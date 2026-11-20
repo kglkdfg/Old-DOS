@@ -117,9 +117,18 @@ Or launch it directly:
 qemu-system-i386 -drive format=raw,file=build/olddos.img,if=floppy
 ```
 
-On Windows PowerShell, if GNU Make is not installed, the boot sector and kernel
-can be assembled with NASM and combined into a floppy image manually. See the
-project discussion/instructions for the PowerShell commands.
+On Windows PowerShell, GNU Make is not required. From the repository folder:
+
+```powershell
+.\build.ps1 -Clean
+.\test.ps1
+.\build.ps1 -Run
+```
+
+The build script checks the 512-byte boot sector, the 0x55AA BIOS signature,
+the current 4 KiB kernel limit, and the resulting 1.44 MiB image. The test
+script verifies the image layout and kernel payload. These are static checks;
+a successful QEMU boot still needs to be tested manually.
 
 ## Project layout
 
@@ -127,6 +136,10 @@ project discussion/instructions for the PowerShell commands.
 boot/boot.asm       BIOS boot sector (loads the kernel)
 kernel/kernel.asm   16-bit kernel, text console, and command shell
 docs/COMMANDS.md   Phased development plan and filesystem specification
+docs/KERNEL-ARCHITECTURE.md  Kernel module interface plan
+docs/DISK-IO.md     BIOS disk I/O and partition discovery design
+build.ps1           Native Windows PowerShell build and QEMU runner
+test.ps1            Static floppy image validation
 Makefile            Build floppy image and launch QEMU
 ```
 
