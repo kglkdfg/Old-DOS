@@ -27,11 +27,11 @@ start:
     mov ah, 0x41
     mov dl, [boot_drive]
     int 0x13
-    jc chs_read
+    jc .no_edd
     cmp bx, 0xAA55
-    jne chs_read
+    jne .no_edd
     test cx, 1
-    jz chs_read
+    jz .no_edd
 
     ; EDD read: kernel begins immediately after the boot sector (LBA 1).
     mov byte [retries], DISK_RETRIES
@@ -50,8 +50,15 @@ start:
     dec byte [retries]
     jnz .edd_retry
 
-    ; Some legacy floppy BIOSes do not implement EDD correctly.
+    ; Do not guess CHS geometry for hard disks.
+    cmp byte [boot_drive], 0x80
+    jae disk_error
     jmp chs_read
+
+.no_edd:
+    ; CHS fallback is intentionally limited to floppy drives.
+    cmp byte [boot_drive], 0x80
+    jae disk_error
 
 chs_read:
     ; Compatibility path for the 1.44 MiB floppy image:
