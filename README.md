@@ -7,7 +7,7 @@ An open-source DOS-inspired operating system built from scratch.
 ## Current milestone: 0.1 prototype
 
 Old-DOS boots in 16-bit x86 real mode through a BIOS boot sector. The boot sector
-loads a small kernel from a floppy image. The kernel initializes the text console
+loads a small kernel from a floppy image. The loader prefers BIOS EDD LBA reads and has a CHS fallback for floppy media. The kernel initializes the text console
 and provides a keyboard-driven command prompt.
 
 ### Implemented commands
@@ -21,7 +21,7 @@ and provides a keyboard-driven command prompt.
 | `REBOOT` | Restart the virtual machine |
 
 Commands are case-insensitive. This is an early educational prototype, not yet
-a fully DOS-compatible operating system. Filesystem access, a text editor,
+a fully DOS-compatible operating system. The kernel now contains an initial read-only BIOS EDD sector-read service, but it has not yet been verified in QEMU and does not mount partitions. Filesystem access, a text editor,
 keyboard layout switching, and the additional commands below are planned, not
 implemented in the current kernel.
 
@@ -68,8 +68,7 @@ Development is divided into ten phases:
     regression, and QEMU/hardware verification before release.
 
 See [docs/COMMANDS.md](docs/COMMANDS.md) for the detailed tasks and exit criteria
-for every phase. Filesystem work in phases 3–5 currently consists of design
-documents only; the kernel does not yet contain ODFS/FAT drivers or file commands.
+for every phase. Filesystem work in phases 3–5 currently consists of design documents only; the kernel does not yet contain ODFS/FAT drivers or file commands. The new BIOS disk read path is an early, unverified prerequisite.
 
 Design documents:
 - [ODFS v1 format proposal](docs/ODFS-SPEC.md)
@@ -142,6 +141,7 @@ a successful QEMU boot still needs to be tested manually.
 ```text
 boot/boot.asm       BIOS boot sector (loads the kernel)
 kernel/kernel.asm   16-bit kernel, text console, and command shell
+kernel/disk.asm     Read-only BIOS EDD LBA disk service
 docs/COMMANDS.md   Phased development plan and filesystem specification
 docs/KERNEL-ARCHITECTURE.md  Kernel module interface plan
 docs/DISK-IO.md     BIOS disk I/O and partition discovery design
