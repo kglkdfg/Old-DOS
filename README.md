@@ -19,9 +19,10 @@ and provides a keyboard-driven command prompt.
 | `VER` | Show the OS version |
 | `ECHO text` | Print text |
 | `REBOOT` | Restart the virtual machine |
+| `DISKTEST` | Read LBA 0 through BIOS EDD and verify the 0x55AA signature |
 
 Commands are case-insensitive. This is an early educational prototype, not yet
-a fully DOS-compatible operating system. The kernel now contains an initial read-only BIOS EDD sector-read service, but it has not yet been verified in QEMU and does not mount partitions. Filesystem access, a text editor,
+a fully DOS-compatible operating system. The kernel now contains an initial read-only BIOS EDD sector-read service and a `DISKTEST` command that checks LBA 0 without writing to disk. The command still needs to be exercised in QEMU; the kernel does not mount partitions. Filesystem access, a text editor,
 keyboard layout switching, and the additional commands below are planned, not
 implemented in the current kernel.
 
